@@ -7,6 +7,7 @@ namespace Spacetab\Tests\BodyValidator;
 use Amp\PHPUnit\AsyncTestCase;
 use HarmonyIO\Validation\Result\Error;
 use Spacetab\BodyValidator\BodyValidator;
+use Spacetab\BodyValidator\Combinator\Sometimes;
 use Spacetab\BodyValidator\NullBody;
 use HarmonyIO\Validation\Rule\Combinator\All;
 use HarmonyIO\Validation\Rule\Email\RfcEmailAddress;
@@ -79,5 +80,37 @@ class BodyValidatorTest extends AsyncTestCase
         $result = yield $validator->verify();
 
         $this->assertTrue($result->isValid());
+    }
+
+    public function testValidationWithEmptySometimesCombinator()
+    {
+        $validator = new BodyValidator([], new class implements BodyValidatorInterface {
+            public function validate(): iterable {
+                yield 'username' => new Sometimes(new LengthRange(3, 15), new AlphaNumeric());
+            }
+        });
+
+        /** @var \Spacetab\BodyValidator\ResultSet $result */
+        $result = yield $validator->verify();
+
+        $this->assertTrue($result->isValid());
+    }
+
+    public function testValidationWithExistsValueForSometimesCombinator()
+    {
+        $body = [
+            'username' => '__roquie'
+        ];
+
+        $validator = new BodyValidator($body, new class implements BodyValidatorInterface {
+            public function validate(): iterable {
+                yield 'username' => new Sometimes(new LengthRange(3, 15), new AlphaNumeric());
+            }
+        });
+
+        /** @var \Spacetab\BodyValidator\ResultSet $result */
+        $result = yield $validator->verify();
+
+        $this->assertFalse($result->isValid());
     }
 }
