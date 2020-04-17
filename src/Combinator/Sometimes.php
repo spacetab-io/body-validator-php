@@ -21,6 +21,10 @@ final class Sometimes implements Rule
         $this->rules = $rules;
     }
 
+    /**
+     * @param mixed $value
+     * @return Promise
+     */
     public function validate($value): Promise
     {
         if (is_null($value)) {
