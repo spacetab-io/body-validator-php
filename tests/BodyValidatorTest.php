@@ -1,0 +1,83 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Spacetab\Tests\BodyValidator;
+
+use Amp\PHPUnit\AsyncTestCase;
+use HarmonyIO\Validation\Result\Error;
+use Spacetab\BodyValidator\BodyValidator;
+use Spacetab\BodyValidator\NullBody;
+use HarmonyIO\Validation\Rule\Combinator\All;
+use HarmonyIO\Validation\Rule\Email\RfcEmailAddress;
+use HarmonyIO\Validation\Rule\Network\Url\Url;
+use HarmonyIO\Validation\Rule\Text\AlphaNumeric;
+use HarmonyIO\Validation\Rule\Text\LengthRange;
+use Spacetab\BodyValidator\BodyValidatorInterface;
+
+class BodyValidatorTest extends AsyncTestCase
+{
+    public function testConstructorInitialization()
+    {
+        $validator = new BodyValidator([], new NullBody());
+
+        $this->assertInstanceOf(BodyValidator::class, $validator);
+    }
+
+    public function testUnsuccessfulValidation()
+    {
+        $body = [
+            'username' => '__roquie',
+            'password' => '1',
+            'contacts' => [
+                'email' => 'mail@@example.com',
+                'github' => 'https:/github.com/roquie',
+            ],
+        ];
+
+        $validator = new BodyValidator($body, new class implements BodyValidatorInterface {
+            public function validate(): iterable {
+                yield 'username' => new All(new LengthRange(3, 15), new AlphaNumeric());
+                yield 'password' => new LengthRange(12, 255);
+                yield 'contacts.email' => new RfcEmailAddress();
+                yield 'contacts.github' => new Url();
+            }
+        });
+
+        /** @var \Spacetab\BodyValidator\ResultSet $result */
+        $result = yield $validator->verify();
+        $errors = $result->getErrors();
+        $keys = array_keys($errors);
+
+        $this->assertFalse($result->isValid());
+
+        foreach ($errors as $values) {
+            foreach ($values as $error) {
+                $this->assertInstanceOf(Error::class, $error);
+            }
+        }
+
+        $this->assertSame('username', $keys[0]);
+        $this->assertSame('password', $keys[1]);
+        $this->assertSame('contacts.email', $keys[2]);
+        $this->assertSame('contacts.github', $keys[3]);
+    }
+
+    public function testSuccessfulValidation()
+    {
+        $body = [
+            'username' => 'roquie'
+        ];
+
+        $validator = new BodyValidator($body, new class implements BodyValidatorInterface {
+            public function validate(): iterable {
+                yield 'username' => new All(new LengthRange(3, 15), new AlphaNumeric());
+            }
+        });
+
+        /** @var \Spacetab\BodyValidator\ResultSet $result */
+        $result = yield $validator->verify();
+
+        $this->assertTrue($result->isValid());
+    }
+}
