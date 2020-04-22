@@ -61,12 +61,20 @@ final class BodyValidator
     private function collectMistakes(array $results): array
     {
         $errors = [];
+        $unique = [];
         foreach ($results as $key => $result) {
             /** @var Error $error */
             foreach ($result->getErrors() as $error) {
-                $errors[$key][] = $error;
+                if (isset($unique[$error->getMessage()])) {
+                    continue;
+                } else {
+                    $unique[$error->getMessage()] = true;
+                    $errors[$key][] = $error;
+                }
             }
         }
+
+        unset($unique);
 
         return $errors;
     }

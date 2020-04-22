@@ -113,4 +113,27 @@ class BodyValidatorTest extends AsyncTestCase
 
         $this->assertFalse($result->isValid());
     }
+
+    public function testValidationWithDuplicatedChecksWhereErrorsMustBeUnique()
+    {
+        $body = [
+            'username' => null
+        ];
+
+        $validator = new BodyValidator($body, new class implements BodyValidatorInterface {
+            public function validate(): iterable {
+                yield 'username' => new All(new LengthRange(3, 15), new AlphaNumeric());
+            }
+        });
+
+        /** @var \Spacetab\BodyValidator\ResultSet $result */
+        $result = yield $validator->verify();
+
+        $this->assertFalse($result->isValid());
+
+        foreach ($result->getErrors() as $errors) {
+            $this->assertCount(1, $errors);
+            break;
+        }
+    }
 }
