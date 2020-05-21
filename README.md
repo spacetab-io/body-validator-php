@@ -13,6 +13,7 @@ composer require spacetab-io/body-validator
 ## Usage
 
 ```php
+<?php
 use Amp\Loop;
 use HarmonyIO\Validation\Rule\Combinator\All;
 use HarmonyIO\Validation\Rule\Email\RfcEmailAddress;
@@ -27,8 +28,14 @@ Loop::run(static function () {
         'username' => '__roquie',
         'password' => '1',
         'contacts' => [
-            'email' => 'mail@@example.com',
-            'github' => 'https:/github.com/roquie',
+            [
+                'email' => '1mail@@example.com',
+                'github' => 'https:/github.com/roquie',
+            ],
+            [
+                'email' => '2mail@@example.com',
+                'github' => 'https:/github.com/roquie',
+            ],
         ],
     ];
 
@@ -36,8 +43,8 @@ Loop::run(static function () {
         public function validate(): iterable {
             yield 'username' => new All(new LengthRange(3, 15), new AlphaNumeric());
             yield 'password' => new LengthRange(12, 255);
-            yield 'contacts.email' => new RfcEmailAddress();
-            yield 'contacts.github' => new Url();
+            yield 'contacts.*.email' => new RfcEmailAddress();
+            yield 'contacts.*.github' => new Url();
         }
     });
 
@@ -48,6 +55,8 @@ Loop::run(static function () {
     $result->getErrors();
 });
 ```
+
+Supported dot-notaion syntax with an asterisk. You can read about it here: https://github.com/spacetab-io/obelix-php
 
 ## Depends
 
