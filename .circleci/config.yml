@@ -29,8 +29,7 @@ jobs:
           key: v1-dependencies-{{ checksum "composer.json" }}
 
       # run static analyse
-      - run: vendor/bin/phpstan analyse src --level 5
-
+      - run: vendor/bin/phpstan analyse src --level 8
       # run tests!
       - run: vendor/bin/phpunit --coverage-clover=coverage.xml
       - run: bash <(curl -s https://codecov.io/bash)

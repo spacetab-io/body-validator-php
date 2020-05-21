@@ -23,6 +23,8 @@ final class Sometimes implements Rule
 
     /**
      * @param mixed $value
+     *
+     * @phpstan-ignore-next-line
      * @return Promise
      */
     public function validate($value): Promise

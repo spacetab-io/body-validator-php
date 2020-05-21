@@ -31,17 +31,25 @@ class BodyValidatorTest extends AsyncTestCase
             'username' => '__roquie',
             'password' => '1',
             'contacts' => [
-                'email' => 'mail@@example.com',
-                'github' => 'https:/github.com/roquie',
+                [
+                    'email' => '1mail@@example.com',
+                    'github' => 'https:/github.com/roquie1',
+                ],
+                [
+                    'email' => '2mail@@example.com',
+                    'github' => 'https:/github.com/roquie2',
+                ],
             ],
         ];
+
+
 
         $validator = new BodyValidator($body, new class implements BodyValidatorInterface {
             public function validate(): iterable {
                 yield 'username' => new All(new LengthRange(3, 15), new AlphaNumeric());
                 yield 'password' => new LengthRange(12, 255);
-                yield 'contacts.email' => new RfcEmailAddress();
-                yield 'contacts.github' => new Url();
+                yield 'contacts.*.email' => new RfcEmailAddress();
+                yield 'contacts.*.github' => new Url();
             }
         });
 
@@ -60,8 +68,10 @@ class BodyValidatorTest extends AsyncTestCase
 
         $this->assertSame('username', $keys[0]);
         $this->assertSame('password', $keys[1]);
-        $this->assertSame('contacts.email', $keys[2]);
-        $this->assertSame('contacts.github', $keys[3]);
+        $this->assertSame('contacts.0.email', $keys[2]);
+        $this->assertSame('contacts.1.email', $keys[3]);
+        $this->assertSame('contacts.0.github', $keys[4]);
+        $this->assertSame('contacts.1.github', $keys[5]);
     }
 
     public function testSuccessfulValidation()

@@ -8,13 +8,17 @@ namespace Spacetab\BodyValidator;
 final class ResultSet
 {
     private bool  $valid;
+
+    /**
+     * @var array<string, array>
+     */
     private array $errors;
 
     /**
      * ResultSet constructor.
      *
      * @param bool $valid
-     * @param array $errors
+     * @param array<string, array> $errors
      */
     public function __construct(bool $valid, array $errors = [])
     {

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Spacetab\BodyValidator;
 
-use Adbar\Dot;
+use Spacetab\Obelix;
 use Amp\Promise;
 use HarmonyIO\Validation\Result\Error;
 use HarmonyIO\Validation\Result\Result;
@@ -12,22 +12,18 @@ use function Amp\call;
 
 final class BodyValidator
 {
-    private Dot $body;
-
-    /**
-     * @var \Spacetab\BodyValidator\BodyValidatorInterface
-     */
+    private Obelix\Dot $body;
     private BodyValidatorInterface $validator;
 
     /**
      * BodyValidator constructor.
      *
-     * @param array $body
+     * @param array<mixed> $body
      * @param \Spacetab\BodyValidator\BodyValidatorInterface $validator
      */
     public function __construct(array $body, BodyValidatorInterface $validator)
     {
-        $this->body      = new Dot($body);
+        $this->body      = new Obelix\Dot($body);
         $this->validator = $validator;
     }
 
@@ -36,13 +32,14 @@ final class BodyValidator
      */
     public function verify(): Promise
     {
+        // @phpstan-ignore-next-line
         return call(function () {
             $promises = [];
+            /** @var \HarmonyIO\Validation\Rule\Rule $rule */
             foreach ($this->validator->validate() as $path => $rule) {
-                /** @var \HarmonyIO\Validation\Rule\Rule $rule */
-                $promises[$path] = $rule->validate(
-                    $this->body->get($path)
-                );
+                foreach ($this->body->get($path)->getMap() as $key => $value) {
+                    $promises[$key] = $rule->validate($value);
+                }
             }
 
             $results = yield $promises;
@@ -55,7 +52,7 @@ final class BodyValidator
     }
 
     /**
-     * @param array $results
+     * @param array<string, Result> $results
      * @return array<string, array<Error>>
      */
     private function collectMistakes(array $results): array
@@ -65,16 +62,16 @@ final class BodyValidator
         foreach ($results as $key => $result) {
             /** @var Error $error */
             foreach ($result->getErrors() as $error) {
-                if (isset($unique[$error->getMessage()])) {
-                    continue;
+                if (isset($errors[$key])) {
+                    if (!isset($unique[$error->getMessage()])) {
+                        $errors[$key] = array_merge($errors[$key], [$error]);
+                    }
                 } else {
-                    $unique[$error->getMessage()] = true;
                     $errors[$key][] = $error;
+                    $unique[$error->getMessage()] = true;
                 }
             }
         }
-
-        unset($unique);
 
         return $errors;
     }
